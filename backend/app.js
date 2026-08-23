@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
 const morgan = require('morgan');
-
+const mongoSanitize = require('express-mongo-sanitize');
 
 
 // Import Routes
@@ -24,7 +24,12 @@ app.use(helmet());
 app.use(cors());
 app.use(compression());
 app.use(morgan('tiny'));
-
+// Express 5 fix: sanitize req.body, req.params manually (req.query is read-only now)
+app.use((req, res, next) => {
+    if (req.body) mongoSanitize.sanitize(req.body);
+    if (req.params) mongoSanitize.sanitize(req.params);
+    next();
+});
 
 
 
