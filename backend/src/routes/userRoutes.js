@@ -1,14 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const userControllers = require('../controllers/User');
-const  {VerifyAdmin} =require('../middlewares/VerifyToken')
+const   { VerifyToken , VerifyRole , VerifyAdmin} =require('../middlewares/VerifyToken')
 
 
 
-router.get('/',userControllers.GetAllUsers);
-router.get('/:id',userControllers.getUserById);
+router
+.get('/',userControllers.GetAllUsers);
 
-router.delete('/:id',VerifyAdmin,userControllers.DeleteUser);
+router
+.get('/:id',VerifyToken,userControllers.getUserById);
+
+router
+.delete('/:id',VerifyToken,VerifyAdmin,userControllers.DeleteUser);
 
 
 module.exports = router;
