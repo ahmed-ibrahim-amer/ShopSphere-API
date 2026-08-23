@@ -1,4 +1,4 @@
-const asynHandler = require('express-async-handler');
+const asyncHandler = require('express-async-handler');
 const Product = require('../models/ProductModel');
 const category = require('../models/CategoryModel');
 const {ValidateNewProduct,ValidateUpdateProduct} =require('../validators/ProductValidate');
@@ -58,4 +58,73 @@ exports.createProduct = asyncHandler(async(req,res)=>{
             }
         )
     ));   
+});
+
+
+
+exports.GetAllProducts = asyncHandler(async(req,res)=>{
+
+    //COPY FROM QUERY OBJECT
+    const queryObj = {...req.query};
+
+    //Remove special query fields
+    const excludeFields = ['sort','page','limit','fields'];
+
+    excludeFields.forEach(el => delete queryObj[el]);
+
+    //Advanced Filtering
+    let queryStr = JSON.stringify(queryObj);
+
+    queryStr = queryStr.replace(
+        /\b(gte|gt|lte|lt)\b/g,
+        match=> `$${match}`
+    );
+
+    const mongoQuery = JSON.parse(queryStr);
+
+    let query = Product.find(mongoQuery);
+    
+
+    //Sorting
+    if(req.query.sort){
+        const sortBy = req.query.sort.split(',').join(' ');
+        query = query.sort(sortBy);
+    }else{
+        query = query.sort(`-createdAt`);
+    }
+
+    //Fiedls limit
+    if(req.query.fields){
+        const fields = req.query.fields.split(',').join(' ');
+        query = query.select(fields);
+    }else{
+        query = query.select('-__v');
+    };
+
+    //Pagination
+    const page = Math.max(Number(req.query.page)||1,1);
+    const limit = Number(req.query.limit)||10;
+    const skip = (page - 1) * limit;
+    query = query.skip(skip).limit(limit);
+
+
+    query = query.populate('category');
+
+
+    const products = await query;
+        if(!products){
+            throw new ApiError('Bad Request',400);
+        }
+
+    res.status(200).json((
+        new ApiResponse(
+            200,
+            "Get all products is successfully",
+            {
+                Products: products,
+                Results: products.length
+
+            }
+        )
+    ));
 });

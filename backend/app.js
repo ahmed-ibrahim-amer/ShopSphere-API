@@ -11,6 +11,8 @@ const morgan = require('morgan');
 // Import Routes
 const Auth = require('../backend/src/routes/authRoute');
 const Users = require('../backend/src/routes/userRoutes');
+const Products = require('../backend/src/routes/ProductRoutes');
+
 //Route setup
 const notFound = require('./src/middlewares/NotFound');
 const globalError = require('./src/middlewares/error');
@@ -31,7 +33,8 @@ app.use(morgan('tiny'));
 
 //routes
 app.use('/api/v1/Auth' ,Auth);
-app.use('/api/v1/users',Users)
+app.use('/api/v1/users',Users);
+app.use('/api/v1/Products',Products);
 
 //apply middlewares
 app.use(globalError);
