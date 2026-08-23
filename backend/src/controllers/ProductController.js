@@ -1,6 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/ProductModel');
-const category = require('../models/CategoryModel');
+const Category  = require('../models/CategoryModel');
 const {ValidateNewProduct,ValidateUpdateProduct} =require('../validators/ProductValidate');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
@@ -10,7 +10,7 @@ const ApiResponse = require('../utils/ApiResponse');
 exports.createProduct = asyncHandler(async(req,res)=>{
     const {error} = ValidateNewProduct(req.body);
         if(error){
-            throw new ApiError(error.details[0].message);
+            throw new ApiError(error.details[0].message,400);
         };
 
     const {
@@ -22,16 +22,14 @@ exports.createProduct = asyncHandler(async(req,res)=>{
             stock,
             category,
             images,
-            ratingsAverage,
-            ratingsCount,
             isActive
         } = req.body;
 
-    const categoryExisting = await category.findById(req.body.category);
+    const categoryExisting = await Category.findById(req.body.category);
         if(!categoryExisting){
-            throw new ApiError('Bad Request',400);
+            throw new ApiError('Category not found', 404);
         }
-    const newProduct = await  category.create({
+    const newProduct = await  Product.create({
             name,
             slug,
             description,
