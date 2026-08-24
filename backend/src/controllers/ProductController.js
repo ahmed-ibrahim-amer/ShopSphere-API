@@ -38,8 +38,6 @@ exports.createProduct = asyncHandler(async(req,res)=>{
             stock,
             category,
             images,
-            ratingsAverage,
-            ratingsCount,
             isActive
     });
         if(!newProduct){
@@ -125,4 +123,80 @@ exports.GetAllProducts = asyncHandler(async(req,res)=>{
             }
         )
     ));
+});
+
+exports.UpdateProduct = asyncHandler(async(req,res)=>{
+    const {error} = ValidateUpdateProduct(req.body);
+        if(error){
+            throw new ApiError(error.details[0].message , 400);
+        }
+    const {
+            name,
+            slug,
+            description,
+            price,
+            discountPrice,
+            stock,
+            category,
+            images,
+            isActive
+        } = req.body;
+
+    const UpdateProduct = await  Product.findByIdAndUpdate( req.params.id,{
+            name,
+            slug,
+            description,
+            price,
+            discountPrice,
+            stock,
+            category,
+            images,
+            isActive
+    }, { new: true, runValidators: true });
+        if(!UpdateProduct){
+            throw new ApiError('Bad Request',400);
+        } 
+        
+        
+    res.status(200).json((
+        new ApiResponse(
+            200,
+            "Product has been updated" ,
+            {
+                product: UpdateProduct
+            }
+        )
+    ));       
+});
+
+exports.DeleteProduct = asyncHandler(async(req,res)=>{
+    const delProduct = await Product.findByIdAndDelete(req.params.id);
+    if(!delProduct){
+        throw new ApiError('Bad Request',400);
+    }
+    res.status(200).json((
+        new ApiResponse(
+            200,
+            "Product has been deleted",
+            {
+                message: "Product has been deleted"
+            }
+    )));
+});
+
+
+
+exports.GetProductById = asyncHandler(async(req,res)=>{
+    const product = await Product.findById(req.params.id).populate('category');
+        if(!product){
+            throw new ApiError('No Product found',404);
+        }
+    res.status(200).json((
+        new ApiResponse(
+            200,
+            "Get product",
+            {
+                Product: product
+            }
+    )));    
 });

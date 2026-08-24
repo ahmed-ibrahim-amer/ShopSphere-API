@@ -12,6 +12,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 const Auth = require('../backend/src/routes/authRoute');
 const Users = require('../backend/src/routes/userRoutes');
 const Products = require('../backend/src/routes/ProductRoutes');
+const Category = require('../backend/src/routes/CategoryRoute');
+
 
 //Route setup
 const notFound = require('./src/middlewares/NotFound');
@@ -24,6 +26,8 @@ app.use(helmet());
 app.use(cors());
 app.use(compression());
 app.use(morgan('tiny'));
+
+
 // Express 5 fix: sanitize req.body, req.params manually (req.query is read-only now)
 app.use((req, res, next) => {
     if (req.body) mongoSanitize.sanitize(req.body);
@@ -40,6 +44,9 @@ app.use((req, res, next) => {
 app.use('/api/v1/Auth' ,Auth);
 app.use('/api/v1/users',Users);
 app.use('/api/v1/Products',Products);
+app.use('/api/v1/Category',Category);
+
+
 
 //apply middlewares
 app.use(globalError);
