@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Cart = require('../models/CartModel');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
-
+const { ValidateAddItem, ValidateUpdateQuantity} = require("../validators/CartValidator")
 
 exports.GetMyCart = asyncHandler(async(req,res)=>{
 
@@ -20,4 +20,14 @@ exports.GetMyCart = asyncHandler(async(req,res)=>{
             }
         )
     ));
+});
+
+
+exports.AddItemToCart = asyncHandler(async(req,res)=>{ 
+    const {error} = ValidateAddItem(req.body);
+        if(error){
+            throw new ApiError(error.details[0].message, 400);
+        }
+    const { productId, quantity } = req.body;
+        
 });
