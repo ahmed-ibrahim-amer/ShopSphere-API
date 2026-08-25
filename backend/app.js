@@ -6,6 +6,11 @@ const cors = require('cors');
 const compression = require('compression');
 const morgan = require('morgan');
 const mongoSanitize = require('express-mongo-sanitize');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./src/config/swagger');
+
+
+
 
 
 // Import Routes
@@ -45,7 +50,8 @@ app.use('/api/v1/Auth' ,Auth);
 app.use('/api/v1/users',Users);
 app.use('/api/v1/Products',Products);
 app.use('/api/v1/Category',Category);
-
+// ... after your other middlewares ...
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 //apply middlewares
@@ -60,5 +66,8 @@ app.get('/' , (req,res)=>{
 });
 
 app.use(notFound);
+
+
+
 
 module.exports = app;

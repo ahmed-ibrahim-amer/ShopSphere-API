@@ -102,14 +102,16 @@ exports.UpdateCategory = asyncHandler(async(req,res)=>{
 exports.getCategoryById = asyncHandler(async(req,res)=>{
     const getCategory = await Category.findById(req.params.id);
         if(!getCategory){
-            throw new ApiError('Bad Request',400);
+            throw new ApiError('Category not found',404);
         }
     res.status(200).json((
-        200,
+        new ApiResponse(
+            200,
         "Get category",
         {
-            data: getCategory
+            category: getCategory
         }
+        )
     ))
 });
 
@@ -117,10 +119,17 @@ exports.getCategoryById = asyncHandler(async(req,res)=>{
 exports.DeleteCategory = asyncHandler(async(req,res)=>{
     const removeCategory = await Category.findByIdAndDelete(req.params.id);
         if(!removeCategory){
-            throw new ApiError('Bad Request',400);
+            throw new ApiError('Category not found',404);
         }
     res.status(200).json((
-        200,
+        new ApiResponse(
+                200,
         "Category has been deleted"
+        ,
+            {
+                message: "Category has been deleted"
+            }
+        )
+
     ))
 });
