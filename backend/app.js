@@ -18,7 +18,7 @@ const Auth = require('../backend/src/routes/authRoute');
 const Users = require('../backend/src/routes/userRoutes');
 const Products = require('../backend/src/routes/ProductRoutes');
 const Category = require('../backend/src/routes/CategoryRoute');
-
+const Cart = require('../backend/src/routes/CartRoutes');
 
 //Route setup
 const notFound = require('./src/middlewares/NotFound');
@@ -52,7 +52,7 @@ app.use('/api/v1/Products',Products);
 app.use('/api/v1/Category',Category);
 // ... after your other middlewares ...
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+app.use('/api/v1/Cart',Cart);
 
 //apply middlewares
 app.use(globalError);

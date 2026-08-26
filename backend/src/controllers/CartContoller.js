@@ -9,7 +9,7 @@ exports.GetMyCart = asyncHandler(async(req,res)=>{
 
     let  cart = await Cart.findOne({user: req.user.id}).populate('items.product');
         if(!cart){
-            Cart = {user: req.user.id , items:[]};
+            cart = {user: req.user.id , items:[]};
         }
 
     res.status(200).json((
@@ -36,7 +36,7 @@ exports.AddItemToCart = asyncHandler(async(req,res)=>{
         }
     let cart = await Cart.findOne({user:req.user.id});
         if(!cart){
-            Cart = await Cart.create({
+            cart = await Cart.create({
                 user:req.user.id,
                 items:[{product :productId , quantity:quantity}]
             });
@@ -57,10 +57,80 @@ exports.AddItemToCart = asyncHandler(async(req,res)=>{
                 201,
                 "Add item to cart",
                 {
-                    updatedCart 
+                    cart: updatedCart 
                 }
             )
         ))
 });
 
 
+exports.UpdateItemQuantity = asyncHandler(async(req,res)=>{
+const {error} = ValidateUpdateQuantity(req.body);
+        if(error){
+            throw new ApiError(error.details[0].message, 400);
+        }
+        let cart = await Cart.findOne({user:req.user.id});
+            if(!cart){
+                throw new ApiError('Cart not found',404);
+            }
+        const { productId, quantity } = req.body;  
+        
+        const itemIndex = cart.items.find(
+            item => item.product.toString() === productId
+        ); 
+    
+        if(!itemIndex){
+            throw new ApiError('Item not found in cart',404);
+        }
+        
+        itemIndex.quantity = quantity;
+        await cart.save() 
+
+        res.status(200).json((
+            new ApiResponse(
+                200,
+                "Product quantity updated successfully",
+                {
+                    data: cart
+                }
+            )
+        ));
+});
+
+
+// Steps for your function (plain English, before code)
+// Validate: need productId from the request (from URL params, probably req.params.productId)
+// Find the user's cart — if no cart, throw 404
+// Bonus check: confirm the product is actually IN the cart before removing (good practice — tells user clearly if nothing happened)
+// Use .filter() to build a new items array, without that product
+// Save the cart
+// Send back the updated cart
+
+exports.RemoveItemFromCart = asyncHandler(async(req,res)=>{
+    const {productId} = req.params;
+
+    let cart = await Cart.findOne({user:req.user.id});
+        if(!cart){
+            throw new ApiError('Cart is not found',404);
+        }
+    const existProduct = cart.items.some(item => item.product.toString() === productId)   
+        if(!existProduct){
+                throw new ApiError('Product Not Found',404);
+            }
+
+    cart.items = cart.items.filter(
+        item => item.product.toString() !== productId
+    );
+
+    await cart.save();
+
+    res.status(200).json((
+        new ApiResponse(
+            200,
+            "item has been deleted",
+            {
+                message:"item has been deleted"
+            }
+        )
+    ))
+});
