@@ -1,4 +1,4 @@
-const express = requrie('express');
+const express = require('express');
 const router = express.Router();
 const CartController = require('../controllers/CartContoller');
 const   { VerifyToken , VerifyRole , VerifyAdmin} = require('../middlewares/VerifyToken');
