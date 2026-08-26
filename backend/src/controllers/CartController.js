@@ -3,7 +3,7 @@ const Cart = require('../models/CartModel');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
 const Product = require('../models/ProductModel');
-const { ValidateAddItem, ValidateUpdateQuantity } = require('../validators/CartValidate');
+const { ValidateAddItem, ValidateUpdateQuantity }= require('../validators/CartValidator');
 
 exports.GetMyCart = asyncHandler(async(req,res)=>{
 

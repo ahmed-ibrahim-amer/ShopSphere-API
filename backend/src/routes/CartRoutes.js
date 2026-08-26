@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const CartController = require('../controllers/CartContoller');
+const CartController = require('../controllers/CartController')
 const   { VerifyToken , VerifyRole , VerifyAdmin} = require('../middlewares/VerifyToken');
 
 router.get('/', VerifyToken, CartController.GetMyCart);
