@@ -1,7 +1,7 @@
 const express = requrie('express');
 const router = express.Router();
 const CartController = require('../controllers/CartContoller');
-
+const   { VerifyToken , VerifyRole , VerifyAdmin} = require('../middlewares/VerifyToken');
 
 router.get('/', VerifyToken, CartController.GetMyCart);
 router.post('/items', VerifyToken, CartController.AddItemToCart);
