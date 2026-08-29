@@ -47,9 +47,6 @@ exports.Register = asyncHandler(async (req , res) => {
         avatar
     });
 
-    // TODO: EMAIL VERIFY
-    // TODO: CREATE REFRESH TOKEN
-
     const createToken = createAccessToken(newUser.id, newUser.role);
     const refreshToken = createRefreshToken(newUser.id, newUser.role);
 

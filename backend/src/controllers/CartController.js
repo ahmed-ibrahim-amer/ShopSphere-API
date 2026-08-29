@@ -65,7 +65,7 @@ exports.AddItemToCart = asyncHandler(async(req,res)=>{
 
 
 exports.UpdateItemQuantity = asyncHandler(async(req,res)=>{
-const {error} = ValidateUpdateQuantity(req.body);
+    const {error} = ValidateUpdateQuantity(req.body);
         if(error){
             throw new ApiError(error.details[0].message, 400);
         }
@@ -73,30 +73,32 @@ const {error} = ValidateUpdateQuantity(req.body);
             if(!cart){
                 throw new ApiError('Cart not found',404);
             }
-        const { productId, quantity } = req.body;  
+        const { productId } = req.params;
+        const { quantity } = req.body;
         
-        const itemIndex = cart.items.find(
+        const item = cart.items.find(
             item => item.product.toString() === productId
         ); 
     
-        if(!itemIndex){
+        if(!item){
             throw new ApiError('Item not found in cart',404);
         }
         
-        itemIndex.quantity = quantity;
-        await cart.save() 
+        item.quantity = quantity;
+        await cart.save();    // ✅ save FIRST
+
+        const updatedCart = await Cart.findOne({user:req.user.id}).populate('items.product');   // ✅ THEN fetch fresh data
 
         res.status(200).json((
             new ApiResponse(
                 200,
                 "Product quantity updated successfully",
                 {
-                    data: cart
+                    cart: updatedCart     // also renamed "data" → "cart" for consistency
                 }
             )
         ));
 });
-
 
 // Steps for your function (plain English, before code)
 // Validate: need productId from the request (from URL params, probably req.params.productId)
