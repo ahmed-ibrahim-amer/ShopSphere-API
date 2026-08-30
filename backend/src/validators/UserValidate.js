@@ -7,7 +7,7 @@ function validateSignUp(obj){
         email:joi.string().lowercase().trim().required(),
         password:joi.string().min(8).max(30).required(),
         phone:joi.number().required(),
-        role:joi.string().required(),
+        role:joi.string(),
         avatar:joi.string(), 
     });
     return Schema.validate(obj);

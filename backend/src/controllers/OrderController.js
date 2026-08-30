@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Order = require('../models/OrderModel');
 const Cart = require('../models/CartModel');
 const Product = require('../models/ProductModel');
-const { ValidateCreateOrder } = require('../validators/OrderValidate');
+const { ValidateCreateOrder } = require('../validators/OrderValidator');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
 
@@ -88,3 +88,22 @@ exports.GetAllOrders = asyncHandler(async(req,res)=>{
     ));
 });
 
+exports.GetOrderById = asyncHandler(async(req,res)=>{
+    const order = await Order.findById(req.params.id).populate('items.product');
+        if(!order){
+            throw new ApiError('Order not found',404);
+        }
+        if(order.user.toString() !== req.user.id && req.user.role !== 'admin'){
+            throw new ApiError('You are not allowed to view this order', 403);
+        }
+
+        res.status(200).json((
+            new ApiResponse(
+                200,
+                "Get order by id is successfully",
+                {
+                    order: order
+                }
+            )
+        ));       
+})

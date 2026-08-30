@@ -2,7 +2,7 @@
 const expressAsyncHandler = require('express-async-handler');
 const bcrypt = require('bcrypt');
 const User = require('../models/UserModel');
-const {createAccessToken,createRefreshToken}= require('../middlewares/CreateTokens');
+const { createAccessToken,createRefreshToken } = require('../middlewares/CreateTokens');
 //Import libraries
 const asyncHandler = require('express-async-handler');
 //Import validators
