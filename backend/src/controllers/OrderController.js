@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Order = require('../models/OrderModel');
 const Cart = require('../models/CartModel');
 const Product = require('../models/ProductModel');
-const { ValidateCreateOrder } = require('../validators/OrderValidator');
+const { ValidateCreateOrder, ValidateUpdateStatus } = require('../validators/OrderValidator');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
 
@@ -106,4 +106,30 @@ exports.GetOrderById = asyncHandler(async(req,res)=>{
                 }
             )
         ));       
+});
+
+exports.UpdateOrderStatus = asyncHandler(async(req,res)=>{
+    const {error} = ValidateUpdateStatus(req.body);
+        if(error){
+            throw new ApiError(error.details[0].message, 400);
+        }
+    const { status } = req.body;
+    if(status !== "pending" && status !== "paid"  && status !== "shipped" && status !== "delivered" && status !== "cancelled"){
+        throw new ApiError('Wrong Status',400);
+    }
+    const newStatus = await Order.findByIdAndUpdate(req.params.id,{
+        status
+    },{new:true});
+        if(!newStatus){
+            throw new ApiError('Order Not Found',404);
+        }
+    res.status(200).json((
+    new ApiResponse(
+        200,
+        "Status has been updated",
+        {
+            newStatus:newStatus
+        }
+    )
+    ))     
 })

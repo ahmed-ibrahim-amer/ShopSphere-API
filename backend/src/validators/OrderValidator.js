@@ -12,4 +12,11 @@ function ValidateCreateOrder(obj){
     return schema.validate(obj);
 };
 
-module.exports = { ValidateCreateOrder };
+function ValidateUpdateStatus(obj){
+    const schema = Joi.object({
+        status: Joi.string().valid('pending', 'paid', 'shipped', 'delivered', 'cancelled').required()
+    });
+    return schema.validate(obj);
+};
+
+module.exports = { ValidateCreateOrder, ValidateUpdateStatus };

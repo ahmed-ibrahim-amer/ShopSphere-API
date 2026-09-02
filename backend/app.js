@@ -8,7 +8,7 @@ const morgan = require('morgan');
 const mongoSanitize = require('express-mongo-sanitize');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./src/config/swagger');
-
+const limiter = require('../backend/src/utils/RateLimiting');
 
 
 
@@ -54,7 +54,7 @@ app.use('/api/v1/Cart',Cart);
 app.use('/api/v1/Orders',Order);
 // ... after your other middlewares ...
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+app.use(limiter());
 
 //apply middlewares
 app.use(globalError);

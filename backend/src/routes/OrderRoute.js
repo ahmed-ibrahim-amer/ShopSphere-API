@@ -6,6 +6,6 @@ const { VerifyToken, VerifyRole, VerifyAdmin } = require('../middlewares/VerifyT
 router.post('/checkout', VerifyToken, OrderController.checkout);
 router.get('/', VerifyToken, OrderController.GetAllOrders);
 router.get('/:id', VerifyToken, OrderController.GetOrderById);
-
+router.patch('/:id', VerifyToken,VerifyAdmin, OrderController.UpdateOrderStatus);
 
 module.exports = router;
