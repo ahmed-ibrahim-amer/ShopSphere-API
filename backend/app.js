@@ -1,8 +1,24 @@
-// Load environment variables first
-const dotenv = require("dotenv");
-dotenv.config();
+// ======================================================
+// Load Environment Variables
+// ======================================================
 
+const dotenv = require("dotenv");
+const path = require("path");
+
+// Local development:
+// backend/.env
+//
+// Vercel:
+// Environment Variables are loaded automatically
+dotenv.config({
+    path: path.join(__dirname, ".env"),
+});
+
+
+// ======================================================
 // Libraries
+// ======================================================
+
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -12,17 +28,33 @@ const mongoSanitize = require("express-mongo-sanitize");
 const swaggerUi = require("swagger-ui-express");
 const mongoose = require("mongoose");
 
+
+// ======================================================
 // App
+// ======================================================
+
 const app = express();
 
+
+// ======================================================
 // Config
+// ======================================================
+
 const swaggerSpec = require("./src/config/swagger");
 const limiter = require("./src/utils/RateLimiting");
 
+
+// ======================================================
 // Redis
+// ======================================================
+
 const { redisClient, connectRedis } = require("./src/cache/redis");
 
+
+// ======================================================
 // Routes
+// ======================================================
+
 const Auth = require("./src/routes/authRoute");
 const Users = require("./src/routes/userRoutes");
 const Products = require("./src/routes/ProductRoutes");
@@ -30,20 +62,34 @@ const Category = require("./src/routes/CategoryRoute");
 const Cart = require("./src/routes/CartRoutes");
 const Order = require("./src/routes/OrderRoute");
 
+
+// ======================================================
 // Middlewares
+// ======================================================
+
 const notFound = require("./src/middlewares/NotFound");
 const globalError = require("./src/middlewares/error");
 
-// Stripe webhook controller
+
+// ======================================================
+// Stripe Webhook Controller
+// ======================================================
+
 const { stripeWebhook } = require("./src/controllers/OrderController");
 
 
 // ======================================================
-// Database & Redis connection for Vercel / Serverless
+// Database & Redis Connection
+// Serverless / Vercel compatible
 // ======================================================
 
 let mongoConnectionPromise = null;
 let redisConnectionPromise = null;
+
+
+// ======================================================
+// MongoDB Connection
+// ======================================================
 
 const connectDatabase = async () => {
 
@@ -52,7 +98,7 @@ const connectDatabase = async () => {
         return;
     }
 
-    // Connection is already being established
+    // Connection already in progress
     if (mongoConnectionPromise) {
         return mongoConnectionPromise;
     }
@@ -63,6 +109,7 @@ const connectDatabase = async () => {
             console.log("✅ MongoDB Connected Successfully");
         })
         .catch((error) => {
+
             mongoConnectionPromise = null;
 
             console.error("❌ MongoDB Connection Failed");
@@ -75,11 +122,15 @@ const connectDatabase = async () => {
 };
 
 
+// ======================================================
+// Redis Connection
+// Redis is OPTIONAL
+// ======================================================
+
 const connectRedisServerless = async () => {
 
-    // Redis is optional
+    // Redis is not configured
     if (!process.env.REDIS_URL) {
-        console.log("⚠️ REDIS_URL is not configured");
         return;
     }
 
@@ -88,19 +139,22 @@ const connectRedisServerless = async () => {
         return;
     }
 
-    // Connection is already being established
+    // Connection already in progress
     if (redisConnectionPromise) {
         return redisConnectionPromise;
     }
 
     redisConnectionPromise = connectRedis()
         .catch((error) => {
+
             redisConnectionPromise = null;
 
             console.error("❌ Redis Connection Failed");
             console.error(error.message);
 
-            throw error;
+            // Redis is optional.
+            // Do NOT stop the whole API if Redis fails.
+            return null;
         });
 
     return redisConnectionPromise;
@@ -108,15 +162,56 @@ const connectRedisServerless = async () => {
 
 
 // ======================================================
-// Database / Redis middleware
+// Security / Basic Middlewares
 // ======================================================
 
-app.use(async (req, res, next) => {
+app.use(helmet());
+
+app.use(cors());
+
+app.use(compression());
+
+app.use(morgan("tiny"));
+
+
+// ======================================================
+// Stripe Webhook
+// IMPORTANT:
+// Must be BEFORE express.json()
+// ======================================================
+
+app.post(
+    "/api/v1/Orders/webhook",
+    express.raw({
+        type: "application/json",
+    }),
+    stripeWebhook
+);
+
+
+// ======================================================
+// JSON Parser
+// ======================================================
+
+app.use(express.json());
+
+
+// ======================================================
+// Mongo Sanitize
+// Express 5 compatible
+// ======================================================
+
+app.use((req, res, next) => {
 
     try {
 
-        await connectDatabase();
-        await connectRedisServerless();
+        if (req.body) {
+            mongoSanitize.sanitize(req.body);
+        }
+
+        if (req.params) {
+            mongoSanitize.sanitize(req.params);
+        }
 
         next();
 
@@ -130,51 +225,35 @@ app.use(async (req, res, next) => {
 
 
 // ======================================================
-// Stripe Webhook
-// IMPORTANT: Must be before express.json()
+// Rate Limiter
 // ======================================================
 
-app.post(
-    "/api/v1/Orders/webhook",
-    express.raw({ type: "application/json" }),
-    stripeWebhook
-);
+app.use(limiter);
 
 
 // ======================================================
-// Middlewares
+// Database / Redis Middleware
 // ======================================================
 
-app.use(express.json());
+app.use(async (req, res, next) => {
 
-app.use(helmet());
+    try {
 
-app.use(cors());
+        // MongoDB is required
+        await connectDatabase();
 
-app.use(compression());
+        // Redis is optional
+        await connectRedisServerless();
 
-app.use(morgan("tiny"));
+        next();
 
+    } catch (error) {
 
-// Express 5 fix:
-// sanitize req.body and req.params manually
-app.use((req, res, next) => {
+        next(error);
 
-    if (req.body) {
-        mongoSanitize.sanitize(req.body);
     }
-
-    if (req.params) {
-        mongoSanitize.sanitize(req.params);
-    }
-
-    next();
 
 });
-
-
-// Rate limiter
-app.use(limiter);
 
 
 // ======================================================
@@ -213,23 +292,29 @@ app.get("/", (req, res) => {
 
     res.status(200).json({
         status: "success",
-        message: "ShopSphere API is running 🚀"
+        message: "ShopSphere API is running 🚀",
     });
 
 });
 
 
 // ======================================================
-// Error Handling
+// 404 Not Found
 // ======================================================
 
 app.use(notFound);
+
+
+// ======================================================
+// Global Error Handler
+// ======================================================
 
 app.use(globalError);
 
 
 // ======================================================
-// Export
+// Export Express App
+// IMPORTANT FOR VERCEL
 // ======================================================
 
 module.exports = app;
