@@ -5,7 +5,7 @@ const Product = require('../models/ProductModel');
 const { ValidateCreateOrder, ValidateUpdateStatus } = require('../validators/OrderValidator');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
-
+const stripe = require('../config/stripe');
 
 
 exports.checkout = asyncHandler(async(req,res)=>{
@@ -17,7 +17,8 @@ exports.checkout = asyncHandler(async(req,res)=>{
 
     const orderItems = [];
     let totalPrice = 0;  
-    
+    const lineItems = [];
+
     const cart = await Cart.findOne({user:req.user.id});  
     
         if(!cart || cart.items.length === 0){
@@ -39,6 +40,16 @@ exports.checkout = asyncHandler(async(req,res)=>{
             price:product.price
         });
         totalPrice += product.price * item.quantity
+        lineItems.push({
+            price_data: {
+                currency: 'usd',
+                product_data: {
+                    name: product.name
+                },
+                unit_amount: Math.round(product.price * 100)
+            },
+            quantity: item.quantity
+        });
     }    
     const { shippingAddress, paymentMethod } = req.body;
     const newOrder = await Order.create({
@@ -48,6 +59,17 @@ exports.checkout = asyncHandler(async(req,res)=>{
         paymentMethod,
         shippingAddress
     });
+    const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode: 'payment',
+        line_items: lineItems,
+        success_url: `http://localhost:3000/api/v1/Orders/success?orderId=${newOrder._id}`,
+        cancel_url: `http://localhost:3000/api/v1/Orders/cancel`,
+        metadata: {
+            orderId: newOrder._id.toString()
+        }
+    });
+    
     for(const item of orderItems){
         await Product.findByIdAndUpdate(
             item.product,
@@ -63,7 +85,8 @@ exports.checkout = asyncHandler(async(req,res)=>{
             201,
             "Order created successfully",
             {
-                order: newOrder
+                order: newOrder,
+                paymentUrl: session.url 
             }
         )
     ));
@@ -133,3 +156,39 @@ exports.UpdateOrderStatus = asyncHandler(async(req,res)=>{
     )
     ))     
 })
+
+
+
+
+
+
+exports.stripeWebhook = asyncHandler(async(req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(
+            req.body,
+            sig,
+            process.env.STRIPE_WEBHOOK_SECRET
+        );
+    } catch (err) {
+        console.log('Webhook signature verification failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const orderId = session.metadata.orderId;
+
+        await Order.findByIdAndUpdate(orderId, {
+            isPaid: true,
+            paidAt: new Date(),
+            status: 'paid'
+        });
+
+        console.log(`Order ${orderId} marked as paid!`);
+    }
+
+    res.status(200).json({ received: true });
+});

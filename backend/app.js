@@ -23,7 +23,18 @@ const Order = require('./src/routes/OrderRoute');
 //Route setup
 const notFound = require('./src/middlewares/NotFound');
 const globalError = require('./src/middlewares/error');
+const stripe = require('../backend/src/config/stripe')
 
+
+
+
+
+// This MUST come BEFORE express.json(), and only for this specific route!
+app.post(
+    '/api/v1/Orders/webhook',
+    express.raw({ type: 'application/json' }),
+    require('./src/controllers/OrderController').stripeWebhook
+);
 
 //Middlewares
 app.use(express.json());
@@ -44,6 +55,8 @@ app.use((req, res, next) => {
 
 
 
+app.use(limiter);
+
 
 //routes
 app.use('/api/v1/Auth' ,Auth);
@@ -54,10 +67,9 @@ app.use('/api/v1/Cart',Cart);
 app.use('/api/v1/Orders',Order);
 // ... after your other middlewares ...
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use(limiter());
 
-//apply middlewares
-app.use(globalError);
+
+
 
 app.get('/' , (req,res)=>{
     res.status(200).json({
@@ -68,7 +80,8 @@ app.get('/' , (req,res)=>{
 });
 
 app.use(notFound);
-
+//apply middlewares
+app.use(globalError);
 
 
 

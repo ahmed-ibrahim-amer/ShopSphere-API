@@ -6,7 +6,7 @@ const   { VerifyToken , VerifyRole , VerifyAdmin} =require('../middlewares/Verif
 
 
 router
-.get('/',userControllers.GetAllUsers);
+.get('/',VerifyToken,userControllers.GetAllUsers);
 
 router
 .get('/:id',VerifyToken,userControllers.getUserById);
