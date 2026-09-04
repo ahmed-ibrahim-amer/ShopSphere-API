@@ -2,7 +2,9 @@
    ShopSphere API client
    Change API_BASE if your backend runs somewhere else.
    ============================================================ */
-const API_BASE = "http://localhost:3000/api/v1";
+
+const API_BASE = "https://shop-sphere-api-6euj.vercel.app/api/v1";
+
 
 const Storage = {
   getAccessToken: () => localStorage.getItem("ss_access"),
